@@ -5,12 +5,12 @@ echo.
 cd /d "%~dp0\.."
 
 echo [1/3] Installing dependencies...
-pip install -r requirements.txt
-pip install pyinstaller
+python -m pip install -r requirements.txt
+python -m pip install pyinstaller
 
 echo.
 echo [2/3] Building executable...
-pyinstaller --onefile --windowed --name "WaveBlender" --collect-data imageio_ffmpeg main.py
+python -m PyInstaller --onefile --windowed --name "WaveBlender" --collect-data imageio_ffmpeg main.py
 
 echo.
 echo [3/3] Build complete!
