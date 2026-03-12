@@ -50,7 +50,7 @@ def waveform_to_audio_segment(
     channels: int = 1,
     sample_width: int = 2,
 ) -> AudioSegment:
-    int_samples = (samples * 32767).astype(np.int16)
+    int_samples = (np.clip(samples, -1.0, 1.0) * 32767).astype(np.int16)
 
     if channels == 2:
         stereo = np.column_stack([int_samples, int_samples])

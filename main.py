@@ -1,14 +1,8 @@
-import os
-import sys
 import tkinter as tk
+import imageio_ffmpeg
+from pydub import AudioSegment
 
-# Set ffmpeg path for PyInstaller bundled builds
-if getattr(sys, "frozen", False):
-    bundle_dir = sys._MEIPASS
-    ffmpeg_path = os.path.join(bundle_dir, "ffmpeg", "ffmpeg.exe")
-    if os.path.exists(ffmpeg_path):
-        from pydub import AudioSegment
-        AudioSegment.converter = ffmpeg_path
+AudioSegment.converter = imageio_ffmpeg.get_ffmpeg_exe()
 
 from wave_blender.ui.app import WaveBlenderApp
 

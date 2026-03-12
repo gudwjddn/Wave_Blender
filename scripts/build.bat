@@ -10,13 +10,7 @@ pip install pyinstaller
 
 echo.
 echo [2/3] Building executable...
-if exist "ffmpeg\ffmpeg.exe" (
-    echo FFmpeg found, bundling with executable...
-    pyinstaller --onefile --windowed --name "WaveBlender" --add-binary "ffmpeg\ffmpeg.exe;ffmpeg" main.py
-) else (
-    echo FFmpeg not found, building without it (WAV only)...
-    pyinstaller --onefile --windowed --name "WaveBlender" main.py
-)
+pyinstaller --onefile --windowed --name "WaveBlender" --collect-data imageio_ffmpeg main.py
 
 echo.
 echo [3/3] Build complete!

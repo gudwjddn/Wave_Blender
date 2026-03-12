@@ -1,5 +1,4 @@
 import os
-import sys
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import threading
@@ -7,8 +6,7 @@ import threading
 from wave_blender.audio_loader import (
     load_audio,
     normalize_audio,
-    is_ffmpeg_available,
-    get_supported_formats,
+    SUPPORTED_FORMATS,
 )
 from wave_blender.wave_synth import (
     WaveformType,
@@ -20,7 +18,7 @@ from wave_blender.mixer import mix_audio
 from wave_blender.exporter import export_audio
 
 
-FREQ_MIN = 20
+FREQ_MIN = 1
 FREQ_MAX = 20000
 OFFSET_MIN = -24
 OFFSET_MAX = 0
@@ -34,7 +32,6 @@ class WaveBlenderApp:
 
         self.audio = None
         self.audio_dbfs = None
-        self.ffmpeg_ok = is_ffmpeg_available()
 
         self._build_ui()
         self._set_status("준비됨")
@@ -100,20 +97,14 @@ class WaveBlenderApp:
         fmt_row = ttk.Frame(export_frame)
         fmt_row.pack(fill="x", pady=(0, 5))
         ttk.Label(fmt_row, text="출력 포맷:").pack(side="left")
-        formats = ["WAV", "MP3"] if self.ffmpeg_ok else ["WAV"]
         self.format_var = tk.StringVar(value="WAV")
-        fmt_combo = ttk.Combobox(
+        ttk.Combobox(
             fmt_row,
             textvariable=self.format_var,
-            values=formats,
+            values=["WAV", "MP3"],
             state="readonly",
             width=8,
-        )
-        fmt_combo.pack(side="left", padx=(5, 0))
-        if not self.ffmpeg_ok:
-            ttk.Label(fmt_row, text="(ffmpeg 미설치: MP3 비활성화)", foreground="gray").pack(
-                side="left", padx=(10, 0)
-            )
+        ).pack(side="left", padx=(5, 0))
 
         self.export_btn = ttk.Button(
             export_frame, text="음원 내보내기...", command=self._on_export
@@ -132,8 +123,7 @@ class WaveBlenderApp:
         self.status_var.set(f"상태: {msg}")
 
     def _on_browse(self) -> None:
-        supported = get_supported_formats()
-        ext_list = " ".join(f"*{ext}" for ext in sorted(supported))
+        ext_list = " ".join(f"*{ext}" for ext in sorted(SUPPORTED_FORMATS))
         filepath = filedialog.askopenfilename(
             title="음원 파일 선택",
             filetypes=[("오디오 파일", ext_list), ("모든 파일", "*.*")],
