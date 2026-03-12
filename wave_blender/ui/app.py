@@ -21,7 +21,7 @@ from wave_blender.exporter import export_audio
 FREQ_MIN = 1
 FREQ_MAX = 20000
 OFFSET_MIN = -24
-OFFSET_MAX = 0
+OFFSET_MAX = 12
 
 
 class WaveBlenderApp:
