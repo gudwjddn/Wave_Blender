@@ -97,11 +97,11 @@ class WaveBlenderApp:
         fmt_row = ttk.Frame(export_frame)
         fmt_row.pack(fill="x", pady=(0, 5))
         ttk.Label(fmt_row, text="출력 포맷:").pack(side="left")
-        self.format_var = tk.StringVar(value="WAV")
+        self.format_var = tk.StringVar(value="MP3")
         ttk.Combobox(
             fmt_row,
             textvariable=self.format_var,
-            values=["WAV", "MP3"],
+            values=["WAV", "MP3", "MP4"],
             state="readonly",
             width=8,
         ).pack(side="left", padx=(5, 0))
