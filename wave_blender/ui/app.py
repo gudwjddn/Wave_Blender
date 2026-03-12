@@ -182,6 +182,8 @@ class WaveBlenderApp:
         label_idx = self.wave_labels.index(self.wave_var.get())
         wave_type = self.wave_types[label_idx]
 
+        self._test_stop_event = threading.Event()
+        self._test_stop_event.clear()
         self.test_btn.config(text="■ 정지", command=self._on_stop_test)
         self._set_status("테스트 재생 중...")
 
@@ -198,7 +200,10 @@ class WaveBlenderApp:
                 with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
                     tmp_path = tmp.name
                 mixed.export(tmp_path, format="wav")
-                winsound.PlaySound(tmp_path, winsound.SND_FILENAME)
+                # SND_ASYNC로 비동기 재생 → Event로 5초 대기 or 정지 신호
+                winsound.PlaySound(tmp_path, winsound.SND_FILENAME | winsound.SND_ASYNC)
+                self._test_stop_event.wait(timeout=5.0)
+                winsound.PlaySound(None, winsound.SND_PURGE)
             except Exception as e:
                 self.root.after(0, lambda: messagebox.showerror("오류", str(e)))
             finally:
@@ -209,7 +214,7 @@ class WaveBlenderApp:
         threading.Thread(target=run, daemon=True).start()
 
     def _on_stop_test(self) -> None:
-        winsound.PlaySound(None, winsound.SND_PURGE)
+        self._test_stop_event.set()
 
     def _test_done(self) -> None:
         self.test_btn.config(text="▶ 테스트 재생 (5초)", command=self._on_test, state="normal")
