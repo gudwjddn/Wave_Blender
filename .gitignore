@@ -9,3 +9,5 @@ build/
 venv/
 ffmpeg/
 .claude/
+icon.jpg
+icon.ico
