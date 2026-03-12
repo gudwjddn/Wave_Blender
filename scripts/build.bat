@@ -10,8 +10,15 @@ python -m pip install pyinstaller pillow
 
 echo.
 echo [2/3] Building executable...
-if exist "assets\icon.jpg" (
-    python -c "from PIL import Image; img=Image.open('assets/icon.jpg'); img.save('icon.ico',format='ICO',sizes=[(256,256),(128,128),(64,64),(48,48),(32,32),(16,16)])"
+set ICON_SRC=
+if exist "icon.jpg" (
+    set ICON_SRC=icon.jpg
+) else if exist "assets\icon.jpg" (
+    set ICON_SRC=assets/icon.jpg
+)
+
+if not "%ICON_SRC%"=="" (
+    python -c "from PIL import Image; img=Image.open('%ICON_SRC%'); img.save('icon.ico',format='ICO',sizes=[(256,256),(128,128),(64,64),(48,48),(32,32),(16,16)])"
     if exist "icon.ico" (
         echo Icon ready.
         set ICON_ARG=--icon icon.ico --add-data "icon.ico;assets"
