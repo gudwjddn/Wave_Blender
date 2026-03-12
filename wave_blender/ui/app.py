@@ -182,7 +182,7 @@ class WaveBlenderApp:
         label_idx = self.wave_labels.index(self.wave_var.get())
         wave_type = self.wave_types[label_idx]
 
-        self.test_btn.config(state="disabled")
+        self.test_btn.config(text="■ 정지", command=self._on_stop_test)
         self._set_status("테스트 재생 중...")
 
         def run():
@@ -208,8 +208,11 @@ class WaveBlenderApp:
 
         threading.Thread(target=run, daemon=True).start()
 
+    def _on_stop_test(self) -> None:
+        winsound.PlaySound(None, winsound.SND_PURGE)
+
     def _test_done(self) -> None:
-        self.test_btn.config(state="normal")
+        self.test_btn.config(text="▶ 테스트 재생 (5초)", command=self._on_test, state="normal")
         self._set_status("테스트 재생 완료")
 
     def _on_export(self) -> None:
@@ -241,8 +244,12 @@ class WaveBlenderApp:
 
         # Get output format and path
         fmt = self.format_var.get().lower()
+        base_name = os.path.splitext(self.file_var.get())[0] or "untitled"
+        offset_str = f"{offset:+.0f}dB"
+        default_name = f"{base_name}_{wave_type.value}_{int(freq)}Hz_{offset_str}"
         output_path = filedialog.asksaveasfilename(
             title="내보낼 파일 저장",
+            initialfile=default_name,
             defaultextension=f".{fmt}",
             filetypes=[(f"{fmt.upper()} 파일", f"*.{fmt}")],
         )
