@@ -14,7 +14,7 @@ if exist "assets\icon.jpg" (
     python -c "from PIL import Image; img=Image.open('assets/icon.jpg'); img.save('icon.ico',format='ICO',sizes=[(256,256),(128,128),(64,64),(48,48),(32,32),(16,16)])"
     if exist "icon.ico" (
         echo Icon ready.
-        set ICON_ARG=--icon icon.ico
+        set ICON_ARG=--icon icon.ico --add-data "icon.ico;assets"
     ) else (
         echo WARNING: Icon conversion failed, building without icon.
         set ICON_ARG=
