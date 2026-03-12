@@ -7,9 +7,11 @@
 - **음원 자동 정규화**: 파일마다 다른 볼륨을 -20 dBFS로 자동 통일
 - **파형 오버레이**: Sine / Square / Sawtooth / Triangle 파형 선택
 - **주파수 설정**: 1 ~ 20,000 Hz 자유 입력
-- **볼륨 오프셋**: 파형 볼륨을 원본 대비 dB 단위로 조절 (기본값 -6 dB)
+- **볼륨 오프셋**: 파형 볼륨을 원본 대비 dB 단위로 조절 (-24 ~ +12 dB, 기본값 -6 dB)
+- **테스트 재생**: 음원 파일 없이 현재 파형 설정을 5초간 미리 청취 (즉시 정지 가능)
 - **클리핑 방지**: 믹싱 후 peak -1 dBFS 초과 시 자동 gain 감소
-- **WAV / MP3 export** (ffmpeg 별도 설치 불필요)
+- **WAV / MP3 / MP4 export** (ffmpeg 별도 설치 불필요)
+  - MP4: 검은 화면(1280×720) + 오디오 트랙
 
 ## 실행 방법 (Python)
 
@@ -33,16 +35,16 @@ python main.py
 scripts\build.bat
 ```
 
-빌드 결과물: `dist/WaveBlender.exe`
-
-> PyInstaller 설치 필요: `pip install pyinstaller`
+- `assets/icon.jpg` 또는 루트의 `icon.jpg`가 있으면 자동으로 앱 아이콘으로 적용됩니다.
+- 빌드 결과물: `dist/WaveBlender.exe`
 
 ## 사용법
 
 1. **찾아보기** 버튼으로 음원 파일 선택 (.wav, .mp3, .ogg, .flac 등)
 2. 파형 종류, 주파수(Hz), 볼륨 오프셋(dB) 설정
-3. 출력 포맷 선택 (WAV / MP3)
-4. **음원 내보내기** 버튼 클릭 후 저장 위치 지정
+3. *(선택)* **▶ 테스트 재생** 버튼으로 파형 미리 듣기 — **■ 정지**로 즉시 중단 가능
+4. 출력 포맷 선택 (WAV / MP3 / MP4)
+5. **음원 내보내기** 버튼 클릭 — 기본 파일명은 `{음원명}_{파형}_{Hz}_{offset}dB` 형식으로 자동 입력
 
 ## 프로젝트 구조
 
@@ -54,7 +56,7 @@ Wave_Blender/
 │   ├── audio_loader.py         # 음원 로드 + 볼륨 정규화
 │   ├── wave_synth.py           # 파형 생성 (numpy/scipy)
 │   ├── mixer.py                # 믹싱 + 클리핑 방지
-│   ├── exporter.py             # WAV/MP3 export
+│   ├── exporter.py             # WAV/MP3/MP4 export
 │   └── ui/
 │       └── app.py              # tkinter GUI
 └── scripts/
@@ -68,5 +70,5 @@ Wave_Blender/
 | pydub | 음원 로드, 볼륨 조절, export |
 | numpy | 파형 샘플 생성 |
 | scipy | square/sawtooth/triangle 파형 |
-| imageio-ffmpeg | ffmpeg 바이너리 내장 (MP3 입출력) |
+| imageio-ffmpeg | ffmpeg 바이너리 내장 (MP3/MP4 입출력) |
 | audioop-lts | Python 3.13+ 호환성 |
