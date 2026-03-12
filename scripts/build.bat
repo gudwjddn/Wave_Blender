@@ -17,20 +17,21 @@ if exist "icon.jpg" (
     set ICON_SRC=assets/icon.jpg
 )
 
+set ICON_FLAG=
+set ADDDATA_FLAG=
 if not "%ICON_SRC%"=="" (
     python -c "from PIL import Image; img=Image.open('%ICON_SRC%'); img.save('icon.ico',format='ICO',sizes=[(256,256),(128,128),(64,64),(48,48),(32,32),(16,16)])"
     if exist "icon.ico" (
         echo Icon ready.
-        set ICON_ARG=--icon icon.ico --add-data "icon.ico;assets"
+        set ICON_FLAG=--icon "%CD%\icon.ico"
+        set ADDDATA_FLAG=--add-data "%CD%\icon.ico;assets"
     ) else (
         echo WARNING: Icon conversion failed, building without icon.
-        set ICON_ARG=
     )
 ) else (
     echo No icon found, building without icon.
-    set ICON_ARG=
 )
-python -m PyInstaller --onefile --windowed --name "WaveBlender" --collect-data imageio_ffmpeg %ICON_ARG% main.py
+python -m PyInstaller --onefile --windowed --clean --name "WaveBlender" --collect-data imageio_ffmpeg %ICON_FLAG% %ADDDATA_FLAG% main.py
 
 echo.
 echo [3/3] Cleanup ^& result...

@@ -1,7 +1,11 @@
 import os
+import tempfile
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import threading
+import winsound
+
+from pydub import AudioSegment
 
 from wave_blender.audio_loader import (
     load_audio,
@@ -90,6 +94,11 @@ class WaveBlenderApp:
             side="left", padx=(5, 0)
         )
 
+        self.test_btn = ttk.Button(
+            wave_frame, text="▶ 테스트 재생 (5초)", command=self._on_test
+        )
+        self.test_btn.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(8, 0))
+
         # --- Export section ---
         export_frame = ttk.Frame(self.root, padding=10)
         export_frame.pack(fill="x", padx=10)
@@ -152,6 +161,56 @@ class WaveBlenderApp:
             self.file_status_var.set(f"로드 완료 & {dbfs:.1f} dBFS로 정규화됨")
 
         self._set_status("준비됨")
+
+    def _on_test(self) -> None:
+        try:
+            freq = float(self.freq_var.get())
+            if not (FREQ_MIN <= freq <= FREQ_MAX):
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("오류", f"주파수는 {FREQ_MIN}~{FREQ_MAX:,} Hz 범위여야 합니다.")
+            return
+
+        try:
+            offset = float(self.offset_var.get())
+            if not (OFFSET_MIN <= offset <= OFFSET_MAX):
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("오류", f"볼륨 오프셋은 {OFFSET_MIN}~{OFFSET_MAX} dB 범위여야 합니다.")
+            return
+
+        label_idx = self.wave_labels.index(self.wave_var.get())
+        wave_type = self.wave_types[label_idx]
+
+        self.test_btn.config(state="disabled")
+        self._set_status("테스트 재생 중...")
+
+        def run():
+            tmp_path = None
+            try:
+                silent = AudioSegment.silent(duration=5000, frame_rate=44100)
+                silent = silent.set_channels(2).set_sample_width(2)
+                samples = generate_waveform(wave_type, freq, len(silent), silent.frame_rate)
+                wave_seg = waveform_to_audio_segment(
+                    samples, silent.frame_rate, silent.channels, silent.sample_width
+                )
+                mixed = mix_audio(silent, wave_seg, offset_db=offset)
+                with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+                    tmp_path = tmp.name
+                mixed.export(tmp_path, format="wav")
+                winsound.PlaySound(tmp_path, winsound.SND_FILENAME)
+            except Exception as e:
+                self.root.after(0, lambda: messagebox.showerror("오류", str(e)))
+            finally:
+                if tmp_path and os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+                self.root.after(0, self._test_done)
+
+        threading.Thread(target=run, daemon=True).start()
+
+    def _test_done(self) -> None:
+        self.test_btn.config(state="normal")
+        self._set_status("테스트 재생 완료")
 
     def _on_export(self) -> None:
         if self.audio is None:
