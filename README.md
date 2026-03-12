@@ -6,10 +6,10 @@
 
 - **음원 자동 정규화**: 파일마다 다른 볼륨을 -20 dBFS로 자동 통일
 - **파형 오버레이**: Sine / Square / Sawtooth / Triangle 파형 선택
-- **주파수 설정**: 20 ~ 20,000 Hz 자유 입력
+- **주파수 설정**: 1 ~ 20,000 Hz 자유 입력
 - **볼륨 오프셋**: 파형 볼륨을 원본 대비 dB 단위로 조절 (기본값 -6 dB)
 - **클리핑 방지**: 믹싱 후 peak -1 dBFS 초과 시 자동 gain 감소
-- **WAV / MP3 export** (MP3는 ffmpeg 필요)
+- **WAV / MP3 export** (ffmpeg 별도 설치 불필요)
 
 ## 실행 방법 (Python)
 
@@ -27,29 +27,9 @@ python main.py
 
 `dist/WaveBlender.exe` 파일을 직접 실행합니다. Python 설치 불필요.
 
-MP3 export를 사용하려면 ffmpeg가 필요합니다 (아래 참고).
-
-## ffmpeg 설치 (MP3 export 활성화)
-
-### 일반 Python 실행 환경
-
-1. [ffmpeg 공식 사이트](https://ffmpeg.org/download.html) 또는 [gyan.dev](https://www.gyan.dev/ffmpeg/builds/) 에서 Windows 빌드 다운로드
-2. `ffmpeg.exe`를 PATH에 추가하거나 시스템 환경변수에 등록
-
-### .exe 빌드에 ffmpeg 번들링
-
-```
-Wave_Blender/
-└── ffmpeg/
-    └── ffmpeg.exe   ← 여기에 배치
-```
-
-`ffmpeg/ffmpeg.exe`를 프로젝트 루트에 배치한 후 빌드하면 자동으로 번들됩니다.
-
 ## .exe 빌드
 
 ```bash
-# ffmpeg 번들 포함 빌드 (ffmpeg/ffmpeg.exe 배치 필요)
 scripts\build.bat
 ```
 
@@ -88,5 +68,5 @@ Wave_Blender/
 | pydub | 음원 로드, 볼륨 조절, export |
 | numpy | 파형 샘플 생성 |
 | scipy | square/sawtooth/triangle 파형 |
+| imageio-ffmpeg | ffmpeg 바이너리 내장 (MP3 입출력) |
 | audioop-lts | Python 3.13+ 호환성 |
-| ffmpeg (외부) | MP3 입출력 |
