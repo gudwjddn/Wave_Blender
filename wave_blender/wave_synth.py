@@ -58,9 +58,11 @@ def waveform_to_audio_segment(
     else:
         raw_data = int_samples.tobytes()
 
+    # Always build as int16 (sample_width=2); mixer.set_sample_width() will
+    # convert to the base audio's actual sample width if needed.
     return AudioSegment(
         data=raw_data,
-        sample_width=sample_width,
+        sample_width=2,
         frame_rate=sample_rate,
         channels=channels,
     )
