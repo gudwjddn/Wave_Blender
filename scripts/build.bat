@@ -1,0 +1,29 @@
+@echo off
+echo === Wave Blender Build ===
+echo.
+
+cd /d "%~dp0\.."
+
+echo [1/3] Installing dependencies...
+pip install -r requirements.txt
+pip install pyinstaller
+
+echo.
+echo [2/3] Building executable...
+if exist "ffmpeg\ffmpeg.exe" (
+    echo FFmpeg found, bundling with executable...
+    pyinstaller --onefile --windowed --name "WaveBlender" --add-binary "ffmpeg\ffmpeg.exe;ffmpeg" main.py
+) else (
+    echo FFmpeg not found, building without it (WAV only)...
+    pyinstaller --onefile --windowed --name "WaveBlender" main.py
+)
+
+echo.
+echo [3/3] Build complete!
+if exist "dist\WaveBlender.exe" (
+    echo Output: dist\WaveBlender.exe
+) else (
+    echo ERROR: Build failed. Check the output above for errors.
+)
+echo.
+pause
