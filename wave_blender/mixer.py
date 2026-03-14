@@ -9,7 +9,12 @@ def mix_audio(
     wave_audio: AudioSegment,
     offset_db: float = WAVE_VOLUME_OFFSET_DB,
     peak_ceiling_dbfs: float = PEAK_CEILING_DBFS,
+    fade_in_ms: int = 0,
+    fade_out_ms: int = 0,
 ) -> AudioSegment:
+    if fade_in_ms < 0 or fade_out_ms < 0:
+        raise ValueError("fade_in_ms와 fade_out_ms는 0 이상이어야 합니다.")
+
     # 1. Match wave duration to base (loop or trim)
     base_len = len(base_audio)
     wave_len = len(wave_audio)
@@ -37,5 +42,11 @@ def mix_audio(
     if mixed.max_dBFS > peak_ceiling_dbfs:
         overshoot = mixed.max_dBFS - peak_ceiling_dbfs
         mixed = mixed.apply_gain(-overshoot)
+
+    # 6. Apply fade
+    if fade_in_ms > 0:
+        mixed = mixed.fade_in(fade_in_ms)
+    if fade_out_ms > 0:
+        mixed = mixed.fade_out(fade_out_ms)
 
     return mixed

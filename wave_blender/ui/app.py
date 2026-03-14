@@ -11,11 +11,13 @@ from wave_blender.audio_loader import (
     load_audio,
     normalize_audio,
     SUPPORTED_FORMATS,
+    TARGET_DBFS,
 )
 from wave_blender.wave_synth import (
     WaveformType,
     WAVEFORM_LABELS,
     generate_waveform,
+    generate_binaural_waveform,
     waveform_to_audio_segment,
 )
 from wave_blender.mixer import mix_audio
@@ -94,10 +96,39 @@ class WaveBlenderApp:
             side="left", padx=(5, 0)
         )
 
+        # Fade row
+        ttk.Label(wave_frame, text="Fade In:").grid(row=3, column=0, sticky="w", pady=(5, 0))
+        fade_row = ttk.Frame(wave_frame)
+        fade_row.grid(row=3, column=1, sticky="w", padx=(5, 0), pady=(5, 0))
+        self.fade_in_var = tk.StringVar(value="0")
+        ttk.Entry(fade_row, textvariable=self.fade_in_var, width=7).pack(side="left")
+        ttk.Label(fade_row, text="ms").pack(side="left", padx=(3, 15))
+        ttk.Label(fade_row, text="Fade Out:").pack(side="left")
+        self.fade_out_var = tk.StringVar(value="0")
+        ttk.Entry(fade_row, textvariable=self.fade_out_var, width=7).pack(side="left", padx=(5, 0))
+        ttk.Label(fade_row, text="ms").pack(side="left", padx=(3, 0))
+
+        # Binaural row
+        binaural_row = ttk.Frame(wave_frame)
+        binaural_row.grid(row=4, column=0, columnspan=2, sticky="w", pady=(5, 0))
+        self.binaural_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(
+            binaural_row,
+            text="바이노럴 비트",
+            variable=self.binaural_var,
+            command=self._on_binaural_toggle,
+        ).pack(side="left")
+        ttk.Label(binaural_row, text="비트 주파수:").pack(side="left", padx=(15, 0))
+        self.beat_hz_var = tk.StringVar(value="10")
+        self.beat_hz_entry = ttk.Entry(binaural_row, textvariable=self.beat_hz_var, width=7)
+        self.beat_hz_entry.pack(side="left", padx=(5, 0))
+        ttk.Label(binaural_row, text="Hz").pack(side="left", padx=(3, 0))
+        self.beat_hz_entry.config(state="disabled")
+
         self.test_btn = ttk.Button(
             wave_frame, text="▶ 테스트 재생 (5초)", command=self._on_test
         )
-        self.test_btn.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(8, 0))
+        self.test_btn.grid(row=5, column=0, columnspan=2, sticky="ew", pady=(8, 0))
 
         # --- Export section ---
         export_frame = ttk.Frame(self.root, padding=10)
@@ -131,6 +162,83 @@ class WaveBlenderApp:
     def _set_status(self, msg: str) -> None:
         self.status_var.set(f"상태: {msg}")
 
+    def _on_binaural_toggle(self) -> None:
+        state = "normal" if self.binaural_var.get() else "disabled"
+        self.beat_hz_entry.config(state=state)
+
+    def _parse_wave_settings(self, clip_length_ms: int):
+        """주파수, offset, fade, binaural 검증. 성공 시 tuple 반환, 실패 시 None."""
+        try:
+            freq = float(self.freq_var.get())
+            if not (FREQ_MIN <= freq <= FREQ_MAX):
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("오류", f"주파수는 {FREQ_MIN}~{FREQ_MAX:,} Hz 범위여야 합니다.")
+            return None
+
+        try:
+            offset = float(self.offset_var.get())
+            if not (OFFSET_MIN <= offset <= OFFSET_MAX):
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("오류", f"볼륨 오프셋은 {OFFSET_MIN}~{OFFSET_MAX} dB 범위여야 합니다.")
+            return None
+
+        try:
+            fade_in_ms = int(self.fade_in_var.get())
+            fade_out_ms = int(self.fade_out_var.get())
+            if fade_in_ms < 0 or fade_out_ms < 0:
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("오류", "Fade In/Out은 0 이상의 정수(ms)여야 합니다.")
+            return None
+
+        if fade_in_ms + fade_out_ms > clip_length_ms:
+            messagebox.showerror(
+                "오류",
+                f"Fade In + Fade Out({fade_in_ms + fade_out_ms} ms)이 "
+                f"클립 길이({clip_length_ms} ms)를 초과합니다.",
+            )
+            return None
+
+        binaural = self.binaural_var.get()
+        beat_hz = 0.0
+        if binaural:
+            try:
+                beat_hz = float(self.beat_hz_var.get())
+                if beat_hz <= 0:
+                    raise ValueError
+            except ValueError:
+                messagebox.showerror("오류", "비트 주파수는 0보다 큰 값이어야 합니다.")
+                return None
+            if freq + beat_hz > FREQ_MAX:
+                messagebox.showerror(
+                    "오류",
+                    f"기준 주파수 + 비트 주파수({freq + beat_hz:.1f} Hz)가 "
+                    f"최대값({FREQ_MAX:,} Hz)을 초과합니다.",
+                )
+                return None
+
+        return freq, offset, fade_in_ms, fade_out_ms, binaural, beat_hz
+
+    def _build_wave_audio(
+        self,
+        duration_ms: int,
+        sample_rate: int,
+        channels: int,
+        sample_width: int,
+        wave_type: WaveformType,
+        freq: float,
+        binaural: bool,
+        beat_hz: float,
+    ) -> AudioSegment:
+        if binaural:
+            samples = generate_binaural_waveform(wave_type, freq, beat_hz, duration_ms, sample_rate)
+            return waveform_to_audio_segment(samples, sample_rate, 2, sample_width)
+        else:
+            samples = generate_waveform(wave_type, freq, duration_ms, sample_rate)
+            return waveform_to_audio_segment(samples, sample_rate, channels, sample_width)
+
     def _on_browse(self) -> None:
         ext_list = " ".join(f"*{ext}" for ext in sorted(SUPPORTED_FORMATS))
         filepath = filedialog.askopenfilename(
@@ -163,21 +271,10 @@ class WaveBlenderApp:
         self._set_status("준비됨")
 
     def _on_test(self) -> None:
-        try:
-            freq = float(self.freq_var.get())
-            if not (FREQ_MIN <= freq <= FREQ_MAX):
-                raise ValueError
-        except ValueError:
-            messagebox.showerror("오류", f"주파수는 {FREQ_MIN}~{FREQ_MAX:,} Hz 범위여야 합니다.")
+        parsed = self._parse_wave_settings(clip_length_ms=5000)
+        if parsed is None:
             return
-
-        try:
-            offset = float(self.offset_var.get())
-            if not (OFFSET_MIN <= offset <= OFFSET_MAX):
-                raise ValueError
-        except ValueError:
-            messagebox.showerror("오류", f"볼륨 오프셋은 {OFFSET_MIN}~{OFFSET_MAX} dB 범위여야 합니다.")
-            return
+        freq, offset, fade_in_ms, fade_out_ms, binaural, beat_hz = parsed
 
         label_idx = self.wave_labels.index(self.wave_var.get())
         wave_type = self.wave_types[label_idx]
@@ -192,15 +289,26 @@ class WaveBlenderApp:
             try:
                 silent = AudioSegment.silent(duration=5000, frame_rate=44100)
                 silent = silent.set_channels(2).set_sample_width(2)
-                samples = generate_waveform(wave_type, freq, len(silent), silent.frame_rate)
-                wave_seg = waveform_to_audio_segment(
-                    samples, silent.frame_rate, silent.channels, silent.sample_width
+
+                wave_seg = self._build_wave_audio(
+                    len(silent), silent.frame_rate, silent.channels, silent.sample_width,
+                    wave_type, freq, binaural, beat_hz,
                 )
-                mixed = mix_audio(silent, wave_seg, offset_db=offset)
+
+                # 파일 없이 테스트 재생 시 TARGET_DBFS 기준으로 파형 볼륨 조정
+                target_wave_dbfs = TARGET_DBFS + offset
+                if wave_seg.dBFS != float("-inf"):
+                    wave_seg = wave_seg.apply_gain(target_wave_dbfs - wave_seg.dBFS)
+
+                mixed = mix_audio(
+                    silent, wave_seg,
+                    offset_db=0,
+                    fade_in_ms=fade_in_ms,
+                    fade_out_ms=fade_out_ms,
+                )
                 with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
                     tmp_path = tmp.name
                 mixed.export(tmp_path, format="wav")
-                # SND_ASYNC로 비동기 재생 → Event로 5초 대기 or 정지 신호
                 winsound.PlaySound(tmp_path, winsound.SND_FILENAME | winsound.SND_ASYNC)
                 self._test_stop_event.wait(timeout=5.0)
                 winsound.PlaySound(None, winsound.SND_PURGE)
@@ -225,33 +333,20 @@ class WaveBlenderApp:
             messagebox.showwarning("경고", "먼저 음원 파일을 선택하세요.")
             return
 
-        # Validate frequency
-        try:
-            freq = float(self.freq_var.get())
-            if not (FREQ_MIN <= freq <= FREQ_MAX):
-                raise ValueError
-        except ValueError:
-            messagebox.showerror("오류", f"주파수는 {FREQ_MIN}~{FREQ_MAX:,} Hz 범위여야 합니다.")
+        parsed = self._parse_wave_settings(clip_length_ms=len(self.audio))
+        if parsed is None:
             return
+        freq, offset, fade_in_ms, fade_out_ms, binaural, beat_hz = parsed
 
-        # Validate offset
-        try:
-            offset = float(self.offset_var.get())
-            if not (OFFSET_MIN <= offset <= OFFSET_MAX):
-                raise ValueError
-        except ValueError:
-            messagebox.showerror("오류", f"볼륨 오프셋은 {OFFSET_MIN}~{OFFSET_MAX} dB 범위여야 합니다.")
-            return
-
-        # Get waveform type
         label_idx = self.wave_labels.index(self.wave_var.get())
         wave_type = self.wave_types[label_idx]
 
-        # Get output format and path
         fmt = self.format_var.get().lower()
         base_name = os.path.splitext(self.file_var.get())[0] or "untitled"
         offset_str = f"{offset:+.0f}dB"
-        default_name = f"{base_name}_{wave_type.value}_{int(freq)}Hz_{offset_str}"
+        bin_suffix = f"_bin{beat_hz:.0f}Hz" if binaural else ""
+        default_name = f"{base_name}_{wave_type.value}_{int(freq)}Hz_{offset_str}{bin_suffix}"
+
         output_path = filedialog.asksaveasfilename(
             title="내보낼 파일 저장",
             initialfile=default_name,
@@ -261,29 +356,24 @@ class WaveBlenderApp:
         if not output_path:
             return
 
-        # Disable export button during processing
         self.export_btn.config(state="disabled")
         self._set_status("처리 중...")
         self.root.update_idletasks()
 
         def process():
             try:
-                samples = generate_waveform(
-                    kind=wave_type,
-                    frequency_hz=freq,
-                    duration_ms=len(self.audio),
-                    sample_rate=self.audio.frame_rate,
-                )
-                wave_seg = waveform_to_audio_segment(
-                    samples=samples,
-                    sample_rate=self.audio.frame_rate,
-                    channels=self.audio.channels,
-                    sample_width=self.audio.sample_width,
+                base_audio = self.audio.set_channels(2) if binaural else self.audio
+
+                wave_seg = self._build_wave_audio(
+                    len(base_audio), base_audio.frame_rate, base_audio.channels,
+                    base_audio.sample_width, wave_type, freq, binaural, beat_hz,
                 )
                 mixed = mix_audio(
-                    base_audio=self.audio,
+                    base_audio=base_audio,
                     wave_audio=wave_seg,
                     offset_db=offset,
+                    fade_in_ms=fade_in_ms,
+                    fade_out_ms=fade_out_ms,
                 )
                 result_path = export_audio(mixed, output_path, format=fmt)
                 self.root.after(0, lambda: self._export_done(result_path))
