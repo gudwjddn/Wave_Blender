@@ -45,15 +45,16 @@ def generate_waveform(
 
 
 def generate_binaural_waveform(
-    kind: WaveformType,
-    base_hz: float,
-    beat_hz: float,
+    L_kind: WaveformType,
+    L_hz: float,
+    R_kind: WaveformType,
+    R_hz: float,
     duration_ms: int,
     sample_rate: int = 44100,
 ) -> np.ndarray:
-    """L=base_hz, R=base_hz+beat_hz 스테레오 배열 반환. shape (N, 2)."""
-    L = generate_waveform(kind, base_hz, duration_ms, sample_rate)
-    R = generate_waveform(kind, base_hz + beat_hz, duration_ms, sample_rate)
+    """L/R 채널 독립 파형 생성. shape (N, 2)."""
+    L = generate_waveform(L_kind, L_hz, duration_ms, sample_rate)
+    R = generate_waveform(R_kind, R_hz, duration_ms, sample_rate)
     return np.column_stack([L, R])
 
 
