@@ -165,13 +165,13 @@ class WaveBlenderApp:
         fade_row.grid(row=2, column=1, sticky="w", padx=(5, 0), pady=(5, 0))
         self.fade_in_var = tk.StringVar(value="0")
         ttk.Entry(fade_row, textvariable=self.fade_in_var, width=7).pack(side="left")
-        ttk.Label(fade_row, text="ms").pack(side="left", padx=(3, 15))
+        ttk.Label(fade_row, text="s").pack(side="left", padx=(3, 15))
         ttk.Label(fade_row, text="Fade Out:").pack(side="left")
         self.fade_out_var = tk.StringVar(value="0")
         ttk.Entry(fade_row, textvariable=self.fade_out_var, width=7).pack(
             side="left", padx=(5, 0)
         )
-        ttk.Label(fade_row, text="ms").pack(side="left", padx=(3, 0))
+        ttk.Label(fade_row, text="s").pack(side="left", padx=(3, 0))
 
         # Binaural checkbox (always shown)
         binaural_row = ttk.Frame(wave_frame)
@@ -252,19 +252,22 @@ class WaveBlenderApp:
             return None
 
         try:
-            fade_in_ms = int(self.fade_in_var.get())
-            fade_out_ms = int(self.fade_out_var.get())
-            if fade_in_ms < 0 or fade_out_ms < 0:
+            fade_in_s = float(self.fade_in_var.get())
+            fade_out_s = float(self.fade_out_var.get())
+            if fade_in_s < 0 or fade_out_s < 0:
                 raise ValueError
         except ValueError:
-            messagebox.showerror("오류", "Fade In/Out은 0 이상의 정수(ms)여야 합니다.")
+            messagebox.showerror("오류", "Fade In/Out은 0 이상의 값(초)이어야 합니다.")
             return None
+
+        fade_in_ms = int(fade_in_s * 1000)
+        fade_out_ms = int(fade_out_s * 1000)
 
         if fade_in_ms + fade_out_ms > clip_length_ms:
             messagebox.showerror(
                 "오류",
-                f"Fade In + Fade Out({fade_in_ms + fade_out_ms} ms)이 "
-                f"클립 길이({clip_length_ms} ms)를 초과합니다.",
+                f"Fade In + Fade Out({fade_in_s + fade_out_s:.1f}s)이 "
+                f"클립 길이({clip_length_ms / 1000:.1f}s)를 초과합니다.",
             )
             return None
 
