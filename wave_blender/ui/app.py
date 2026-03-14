@@ -27,6 +27,7 @@ FREQ_MIN = 1
 FREQ_MAX = 20000
 OFFSET_MIN = -24
 OFFSET_MAX = 12
+PREVIEW_REF_DBFS = -6.0  # test playback reference level (all waveforms normalized to this)
 
 
 class WaveBlenderApp:
@@ -69,12 +70,18 @@ class WaveBlenderApp:
         self.wave_labels = [WAVEFORM_LABELS[wt] for wt in WaveformType]
         self.wave_types = list(WaveformType)
 
+        # Initialize StringVars once (prevents double-assignment bugs)
+        self.freq_var   = tk.StringVar(value="440")
+        self.freq_var_R = tk.StringVar(value="450")
+        self.wave_var   = tk.StringVar(value=self.wave_labels[0])
+        self.wave_var_L = tk.StringVar(value=self.wave_labels[0])
+        self.wave_var_R = tk.StringVar(value=self.wave_labels[0])
+
         # Single mode container (row 0, shown by default)
         self.single_wave_frame = ttk.Frame(wave_frame)
         self.single_wave_frame.grid(row=0, column=0, columnspan=2, sticky="w")
 
         ttk.Label(self.single_wave_frame, text="파형 종류:").grid(row=0, column=0, sticky="w")
-        self.wave_var = tk.StringVar(value=self.wave_labels[0])
         ttk.Combobox(
             self.single_wave_frame,
             textvariable=self.wave_var,
@@ -88,7 +95,6 @@ class WaveBlenderApp:
         )
         freq_row = ttk.Frame(self.single_wave_frame)
         freq_row.grid(row=1, column=1, sticky="w", padx=(5, 0), pady=(5, 0))
-        self.freq_var = tk.StringVar(value="440")
         ttk.Entry(freq_row, textvariable=self.freq_var, width=10).pack(side="left")
         ttk.Label(freq_row, text=f"Hz  ({FREQ_MIN}~{FREQ_MAX:,})").pack(
             side="left", padx=(5, 0)
@@ -112,7 +118,6 @@ class WaveBlenderApp:
         ttk.Label(self.binaural_wave_frame, text="파형 종류:").grid(
             row=1, column=0, sticky="w", pady=(5, 0)
         )
-        self.wave_var_L = tk.StringVar(value=self.wave_labels[0])
         ttk.Combobox(
             self.binaural_wave_frame,
             textvariable=self.wave_var_L,
@@ -120,7 +125,6 @@ class WaveBlenderApp:
             state="readonly",
             width=10,
         ).grid(row=1, column=1, sticky="w", padx=(5, 20), pady=(5, 0))
-        self.wave_var_R = tk.StringVar(value=self.wave_labels[0])
         ttk.Combobox(
             self.binaural_wave_frame,
             textvariable=self.wave_var_R,
@@ -135,13 +139,11 @@ class WaveBlenderApp:
         )
         freq_L_row = ttk.Frame(self.binaural_wave_frame)
         freq_L_row.grid(row=2, column=1, sticky="w", padx=(5, 20), pady=(5, 0))
-        self.freq_var = tk.StringVar(value="440")
         ttk.Entry(freq_L_row, textvariable=self.freq_var, width=7).pack(side="left")
         ttk.Label(freq_L_row, text="Hz").pack(side="left", padx=(3, 0))
 
         freq_R_row = ttk.Frame(self.binaural_wave_frame)
         freq_R_row.grid(row=2, column=2, sticky="w", pady=(5, 0))
-        self.freq_var_R = tk.StringVar(value="450")
         ttk.Entry(freq_R_row, textvariable=self.freq_var_R, width=7).pack(side="left")
         ttk.Label(freq_R_row, text="Hz").pack(side="left", padx=(3, 0))
 
@@ -355,9 +357,15 @@ class WaveBlenderApp:
                     len(silent), silent.frame_rate, silent.channels, silent.sample_width,
                     wave_type, freq, binaural, wave_type_R, freq_R,
                 )
+                # Normalize all waveforms to consistent preview level so
+                # square/sine/sawtooth/triangle sound equally loud in test mode.
+                if wave_seg.dBFS != float("-inf"):
+                    wave_seg = wave_seg.apply_gain(
+                        PREVIEW_REF_DBFS + offset - wave_seg.dBFS
+                    )
                 mixed = mix_audio(
                     silent, wave_seg,
-                    offset_db=offset,
+                    offset_db=0,
                     fade_in_ms=fade_in_ms,
                     fade_out_ms=fade_out_ms,
                 )
