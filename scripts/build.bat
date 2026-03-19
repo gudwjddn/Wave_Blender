@@ -11,10 +11,10 @@ python -m pip install pyinstaller pillow
 echo.
 echo [2/3] Building executable...
 set ICON_SRC=
-if exist "icon.jpg" (
-    set ICON_SRC=icon.jpg
-) else if exist "assets\icon.jpg" (
-    set ICON_SRC=assets/icon.jpg
+if exist "icon.png" (
+    set ICON_SRC=icon.png
+) else if exist "assets\icon.png" (
+    set ICON_SRC=assets/icon.png
 )
 
 set ICON_FLAG=

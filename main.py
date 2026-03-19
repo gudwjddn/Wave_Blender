@@ -19,7 +19,7 @@ def _get_icon_path() -> str | None:
 
 def main() -> None:
     root = tk.Tk()
-    root.geometry("520x370")
+    root.geometry("520x1")
     icon = _get_icon_path()
     if icon:
         root.iconbitmap(icon)

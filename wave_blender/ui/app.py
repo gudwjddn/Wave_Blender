@@ -40,6 +40,7 @@ class WaveBlenderApp:
         self.audio_dbfs = None
 
         self._build_ui()
+        self.root.after(0, self._resize_window)
         self._set_status("준비됨")
 
     def _build_ui(self) -> None:
@@ -219,6 +220,10 @@ class WaveBlenderApp:
             side="left"
         )
 
+    def _resize_window(self) -> None:
+        self.root.update_idletasks()
+        self.root.geometry(f"520x{self.root.winfo_reqheight()}")
+
     def _set_status(self, msg: str) -> None:
         self.status_var.set(f"상태: {msg}")
 
@@ -229,6 +234,7 @@ class WaveBlenderApp:
         else:
             self.binaural_wave_frame.grid_remove()
             self.single_wave_frame.grid()
+        self._resize_window()
 
     def _get_wave_type(self, var: tk.StringVar) -> WaveformType:
         return self.wave_types[self.wave_labels.index(var.get())]
